@@ -1,0 +1,146 @@
+mtcarsexplore.R
+donso
+
+Thu May 21 14:58:52 2015
+
+# Executive summary
+# In short, the mtcars data set is used and explore the relationship between potential predictor variables and miles per gallon. Simple linear models are used to see how manual/automatic transmissions impact the MPG feature. Exploratory Data Analysis shows there is a difference – about 7 MPG without controlling for any other factors. Additional models are fit to find significant variables with the highest adjusted R-Squared. The final model contains weight and ¼ mile time in addition to the transmission variable and an interaction term between weight and transmission type. After controlling for these other factors, a manual transmission car will have on average 14.079 + (-4.141)*weight more MPG than an automatic car when weight and ¼ mile time are held constant. Plots to determine if the linear model is a good fit seemed to look good suggesting this is a good model. However, one thing to note – only 32 observations are in the dataset and  data was collected over 40 years ago so interpretation and application of the results must keep this in mind.
+# print the first few transactions
+head(mtcars)
+##                    mpg cyl disp  hp drat    wt  qsec vs am gear carb
+## Mazda RX4         21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
+## Mazda RX4 Wag     21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
+## Datsun 710        22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
+## Hornet 4 Drive    21.4   6  258 110 3.08 3.215 19.44  1  0    3    1
+## Hornet Sportabout 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
+## Valiant           18.1   6  225 105 2.76 3.460 20.22  1  0    3    1
+?mtcars
+
+summary(mtcars$qsec)
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   14.50   16.89   17.71   17.85   18.90   22.90
+# review the structure of the data frame
+# str(mtcars)
+
+# create factor variables for the regression analysis
+mtcars$cyl <- as.factor(mtcars$cyl)
+mtcars$vs <- as.factor(mtcars$vs)
+mtcars$am <- factor(mtcars$am)
+mtcars$gear <- factor(mtcars$gear)
+mtcars$carb <- factor(mtcars$carb)
+
+# review structure after factor variables were created
+str(mtcars)
+## 'data.frame':    32 obs. of  11 variables:
+##  $ mpg : num  21 21 22.8 21.4 18.7 18.1 14.3 24.4 22.8 19.2 ...
+##  $ cyl : Factor w/ 3 levels "4","6","8": 2 2 1 2 3 2 3 1 1 2 ...
+##  $ disp: num  160 160 108 258 360 ...
+##  $ hp  : num  110 110 93 110 175 105 245 62 95 123 ...
+##  $ drat: num  3.9 3.9 3.85 3.08 3.15 2.76 3.21 3.69 3.92 3.92 ...
+##  $ wt  : num  2.62 2.88 2.32 3.21 3.44 ...
+##  $ qsec: num  16.5 17 18.6 19.4 17 ...
+##  $ vs  : Factor w/ 2 levels "0","1": 1 1 2 2 1 2 1 2 2 2 ...
+##  $ am  : Factor w/ 2 levels "0","1": 2 2 2 1 1 1 1 1 1 1 ...
+##  $ gear: Factor w/ 3 levels "3","4","5": 2 2 2 1 1 1 1 2 2 2 ...
+##  $ carb: Factor w/ 6 levels "1","2","3","4",..: 4 4 1 1 2 1 4 2 2 4 ...
+# quick boxplot of mpg vs am
+boxplot(mtcars$mpg ~ mtcars$am, xlab="Transmission- 0=Automatic, 1=Manual)", ylab="MPG",
+        main="MPG vs. Transmission")
+
+library(ggplot2)
+
+
+# Plot of MPG and WT with AM color
+ggplot(mtcars, 
+       aes(x=wt, y=mpg, group=am, color=am, height=3, width=3)) + 
+       geom_point() +  
+       scale_colour_discrete(labels=c("Automatic", "Manual")) + 
+       xlab("weight") + 
+       ggtitle("MPG vs. Weight by Transmission")
+
+
+# model only including transmission type
+AMonly <- lm(mpg ~ am, data=mtcars)
+
+# fit the full model - remove highest pvalue variable - commented out due to size constraints
+# summary(lm(mpg ~ cyl + disp + hp + drat + wt + qsec + vs + am + gear + carb, data=mtcars))
+# summary(lm(mpg ~ disp + hp + drat + wt + qsec + vs + am + gear + carb, data=mtcars))
+# summary(lm(mpg ~ disp + hp + drat + wt + qsec + vs + am + gear, data=mtcars))
+# summary(lm(mpg ~ disp + hp + drat + wt + qsec + am + gear, data=mtcars))
+# summary(lm(mpg ~ disp + hp + wt + qsec + am + gear, data=mtcars))
+# summary(lm(mpg ~ hp + wt + qsec + am + gear, data=mtcars))
+# summary(lm(mpg ~ disp + hp + wt + qsec + am, data=mtcars))
+# summary(lm(mpg ~ hp + wt + qsec + am, data=mtcars))
+
+# final model with only significant variables after manual backward selection
+FULLmodel <- lm(mpg ~ wt + qsec + am, data=mtcars)
+
+# add in interaction term
+INTmodel <- lm(mpg ~ wt + qsec + am + wt:am, data=mtcars)
+
+# print results of each model
+summary(AMonly)
+## 
+## Call:
+## lm(formula = mpg ~ am, data = mtcars)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -9.3923 -3.0923 -0.2974  3.2439  9.5077 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)   17.147      1.125  15.247 1.13e-15 ***
+## am1            7.245      1.764   4.106 0.000285 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 4.902 on 30 degrees of freedom
+## Multiple R-squared:  0.3598, Adjusted R-squared:  0.3385 
+## F-statistic: 16.86 on 1 and 30 DF,  p-value: 0.000285
+summary(FULLmodel)
+## 
+## Call:
+## lm(formula = mpg ~ wt + qsec + am, data = mtcars)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3.4811 -1.5555 -0.7257  1.4110  4.6610 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)   9.6178     6.9596   1.382 0.177915    
+## wt           -3.9165     0.7112  -5.507 6.95e-06 ***
+## qsec          1.2259     0.2887   4.247 0.000216 ***
+## am1           2.9358     1.4109   2.081 0.046716 *  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 2.459 on 28 degrees of freedom
+## Multiple R-squared:  0.8497, Adjusted R-squared:  0.8336 
+## F-statistic: 52.75 on 3 and 28 DF,  p-value: 1.21e-11
+summary(INTmodel)
+## 
+## Call:
+## lm(formula = mpg ~ wt + qsec + am + wt:am, data = mtcars)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3.5076 -1.3801 -0.5588  1.0630  4.3684 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)    9.723      5.899   1.648 0.110893    
+## wt            -2.937      0.666  -4.409 0.000149 ***
+## qsec           1.017      0.252   4.035 0.000403 ***
+## am1           14.079      3.435   4.099 0.000341 ***
+## wt:am1        -4.141      1.197  -3.460 0.001809 ** 
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 2.084 on 27 degrees of freedom
+## Multiple R-squared:  0.8959, Adjusted R-squared:  0.8804 
+## F-statistic: 58.06 on 4 and 27 DF,  p-value: 7.168e-13
+# additional plots for goodness of fit for the selected model
+par(mfrow = c(2, 2))
+plot(INTmodel)
